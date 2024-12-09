@@ -5,25 +5,43 @@ namespace App\Http\Controllers;
 use App\Models\Employee;
 use Illuminate\Http\Request;
 use App\DataTables\EmployeesDataTable;
+use Yajra\DataTables\DataTables;
 
 class EmployeeController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index(EmployeesDataTable $dataTable)
+    // public function index(EmployeesDataTable $dataTable)
+    // {
+    //      return $dataTable->render('employees.index');
+    // }
+    public function index(Request $request)
     {
-         return $dataTable->render('employees.index');
+        if ($request->ajax()) {
+
+            // $data = Employee::query();
+            $data = Employee::all();
+            if ($request->filled('from_date') && $request->filled('to_date')) {
+                $data = $data->whereBetween('hire_date', [$request->from_date, $request->to_date]);
+            }
+
+            return DataTables::of($data)
+                    ->addIndexColumn()
+                    ->make(true);
+        }
+          
+        return view('employees.index');
     }
 
-    public function filter(request $dataTable){
-        $start_date = $dataTable->start_date;
-        $end_date = $dataTable->end_date;
+    public function filter(request $request){
+        $start_date = $request->start_date;
+        $end_date = $request->end_date;
 
         $employees = Employee::whereDate('hire_date','>=',$start_date)
                                 ->whereDate('hire_date','<=',$end_date)
                                 ->get();
-        return $dataTable->render('employees.index');
+        return view('employees.index', compact('employees'));
     }
 
     /**
